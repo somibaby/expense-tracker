@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+data.db
+data.db-journal
+streamlit.log
+.venv/
