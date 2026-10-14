@@ -1,45 +1,84 @@
-# Data System Demo
+# Expense Tracker (KRW, offline)
 
-A small Python system: people add data through a form, it's stored in a
-database, and everyone can see the analysis on a dashboard.
+A daily expense tracker for a single Korean-won user, built with Expo (React
+Native + TypeScript). Everything lives on your device — there's no account,
+no login, and no network calls. When you want your data in Excel, export a
+CSV or copy rows straight to the clipboard.
 
-- **Storage**: SQLite (`data.db`, created automatically on first run)
-- **App**: Streamlit (`app.py`) — form to add entries + dashboard with charts
-- **Analysis**: pandas
+## What it does
 
-## Setup
+- Log expenses in a few taps: amount keypad, category, optional note
+- **Home** — a dashboard: safe-to-spend-today, this month's budget progress,
+  spending by category (donut), the last 7 days, and your most recent entries
+- **Activity** — every transaction, grouped by day, filterable by category
+- **Insights** — month-over-month totals, a daily spending heatmap, and a
+  full category breakdown for the current month
+- **Excel** — download a `.csv` (Korean-text-safe, opens cleanly in Excel) or
+  copy tab-separated rows to paste directly into a spreadsheet; also where
+  you set your monthly budget
+- Nothing leaves the device until you tap export
+
+## Run it
+
+```bash
+npm install
+npm start
+```
+
+Scan the QR code with **Expo Go** (iOS/Android) to run it on your phone, or
+press `w` in the terminal to try it in a browser via `npm run web`.
+
+## Project structure
+
+The code is grouped by **workflow** and numbered in reading order, so the
+file explorer doubles as a learning path. Each folder has its own
+`README.md` that walks through its flow file by file.
 
 ```
-pip install -r requirements.txt
+App.tsx                        Entry point: fonts, providers, tabs, sheet, toast
+src/
+  1-data/                      What an expense is and where it lives
+                               types, LedgerContext (the store), storage
+                               (AsyncStorage), derived (budget/pace math)
+  2-ui-kit/                    Shared building blocks: theme, format,
+                               components/ (Screen, Card), hooks/, toast/
+  3-app-shell/                 Bottom tabs with the raised "+" button,
+                               navigation types and ref
+  4-add-expense/               "+" → form → save → back to Home + toast
+                               AddExpenseSheet, SheetContext,
+                               useSheetAnimation, components/ (Keypad,
+                               CategoryPicker, DateField)
+  5-review-spending/           The read-only tabs
+    home/                        Dashboard: budget, donut, week, recent
+    activity/                    All transactions by day, category filter
+    insights/                    Month-over-month, heatmap, breakdown
+  6-export-excel/              CSV download / copy rows, budget, clear data
 ```
 
-## Run
+### Suggested reading order
 
-```
-streamlit run app.py
-```
+Follow the numbers:
 
-This opens the app in your browser at `http://localhost:8501`.
+1. `src/1-data/` — the data model and the single store everything uses
+2. `src/2-ui-kit/` — skim; come back when a screen imports from it
+3. `App.tsx`, then `src/3-app-shell/` — how the app is assembled
+4. `src/4-add-expense/` — the write path: how a new expense gets in
+5. `src/5-review-spending/` — the read path: screens → cards → `derived.ts`
+6. `src/6-export-excel/` — how data gets out again
 
-## How it works
+## Data & persistence
 
-- **Add Entry tab**: anyone using the app fills in Name, Category, Value,
-  Date, Notes — saved into `data.db`.
-- **Dashboard tab**: shows the full table, summary stats, and charts
-  (average value by category, value over time, entries per person).
+All data is stored under one AsyncStorage key (`ledger.krw.v2`) as
+`{ txs, budget }`, written after every change. On load, every record is
+validated and repaired independently — a corrupt or old-format entry is
+coerced to something sane or dropped, rather than crashing the app. Bump the
+storage key if you ever change the schema.
 
-The fields (Name/Category/Value/Date/Notes) are generic on purpose —
-swap them for your real data (sensor readings, expenses, survey scores,
-etc.) once you know what you're tracking.
+## Troubleshooting
 
-## Letting others use it
-
-Right now this runs only on your machine. To let other people add data
-and view the dashboard too, you have two easy options later:
-
-1. **Streamlit Community Cloud** (free) — push this folder to a GitHub
-   repo and deploy it at share.streamlit.io. Everyone gets a shared link.
-2. **Swap SQLite for a hosted database** (e.g. Postgres on Supabase/Railway)
-   if you expect many people writing data at the same time — SQLite is
-   fine for one or a few people, but a real database handles concurrent
-   writes better.
+- **Fonts look like the system default briefly on launch** — Manrope and IBM
+  Plex Mono load asynchronously; the app shows a blank loading screen until
+  they're ready, which should be near-instant after the first launch.
+- **Export button does nothing on web** — the native share sheet isn't
+  available in a browser; use "Copy rows" there instead, or test the download
+  flow in Expo Go on a real device.
